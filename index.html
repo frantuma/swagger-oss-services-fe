@@ -17,23 +17,15 @@
     <script src="./swagger-initializer.js" charset="UTF-8"> </script>
     <script>
       window.onload = function() {
-        const ossServices = 'SWAGGER_OSS_SERVICES';
-        let apiUrl = window.location.protocol + "//" + window.location.host + "/api/v3/openapi.json";
-        if (ossServices && ossServices.length > 0 && ossServices.indexOf('=') !== -1) {
-          const tuples = ossServices.split(",");
-          for (const tuple of tuples) {
-            const tupleAr = tuple.split("=");
-            const host = tupleAr[0];
-            const url = tupleAr[1];
-            if (window.location.host.indexOf(host) !== -1) {
-              apiUrl = url;
-              break;
-            }
-          }
-        }
+        const defaultDefinitionUrl = 'https://petstore3.swagger.io/api/v3/openapi.json';
+        const ossServices = `${window.location.host}=${defaultDefinitionUrl}`;
+        const ossServicesTuples = ossServices.split(',').map(ossService => ossService.split('='))
+        const ossServiceMatch = ossServicesTuples.find(([host]) => window.location.host.includes(host))
+        const definitionURL = ossServiceMatch ? ossServiceMatch[1] : defaultDefinitionUrl;
+
         const ui = SwaggerUIBundle({
           oauth2RedirectUrl:  window.location.protocol + '//' + window.location.host + '/oauth2-redirect.html',
-          url: apiUrl,
+          url: definitionURL,
           dom_id: '#swagger-ui',
           presets: [
             SwaggerUIBundle.presets.apis,
