@@ -9,5 +9,5 @@ if [ "$SWAGGER_OSS_SERVICES" ]; then
   sed -i "s|\${window.location.host}=\${defaultDefinitionUrl}|$SWAGGER_OSS_SERVICES|g" $INDEX_FILE
 fi
 
-# what is line below doing? should we zip the modified index?
-# find $NGINX_ROOT -type f -regex ".*\.\(html\|js\|css\)" -exec sh -c "gzip < {} > {}.gz" \;
+# applies gzip to assets for faster serving; index.html.gz takes preference over index.html
+find $NGINX_ROOT -type f -regex ".*\.\(html\|js\|css\)" -exec sh -c "gzip < {} > {}.gz" \;
