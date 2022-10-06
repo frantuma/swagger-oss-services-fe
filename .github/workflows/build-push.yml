@@ -22,11 +22,28 @@ jobs:
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
-      -
-        name: Build and push
+      - name: check for new Swagger UI image
+        run: |
+          export DOCKER_NS=${{ github.event.inputs.dockerNamespace }}
+          UI_NEW=0
+          UI_LATEST=$(curl -s -X 'GET'   'https://hub.docker.com/v2/namespaces/swaggerapi/repositories/swagger-ui/tags'   -H 'accept: application/json' | jq '.results[] | select(.name=="latest") | .tag_last_pushed[0:19] | strptime("%Y-%m-%dT%H:%M:%S") | mktime')
+          CUSTOM_LATEST=$(curl -s -X 'GET'   'https://hub.docker.com/v2/namespaces/${{ env.DOCKER_NS }}/repositories/swagger-oss-services-fe/tags'   -H 'accept: application/json' | jq '.results[] | select(.name=="latest") | .tag_last_pushed[0:19] | strptime("%Y-%m-%dT%H:%M:%S") | mktime')
+          if [[ ! -z "$UI_LATEST" && ! -z "$CUSTOM_LATEST" && $UI_LATEST -gt $CUSTOM_LATEST ]]; 
+          then
+            echo "new Swagger UI image found"
+            UI_NEW=1
+          else
+            echo "no new swagger UI image found, aborting."
+          fi
+          echo "UI_NEW from script: $UI_NEW"
+          echo "UI_NEW=$UI_NEW" >> $GITHUB_ENV
+          echo "env.DOCKER_NS: ${{ env.DOCKER_NS }}"
+      - name: Build and push
+        if: env.UI_NEW == 1
         uses: docker/build-push-action@v3
         with:
           push: true
           tags: ${{ env.DOCKER_NS }}/swagger-oss-services-fe:latest
     env:
       DOCKER_NS: ${{ github.event.inputs.dockerNamespace }}
+      UI_NEW: 0
