@@ -28,7 +28,7 @@ jobs:
           UI_NEW=0
           UI_LATEST=$(curl -s -X 'GET'   'https://hub.docker.com/v2/namespaces/swaggerapi/repositories/swagger-ui/tags'   -H 'accept: application/json' | jq '.results[] | select(.name=="latest") | .tag_last_pushed[0:19] | strptime("%Y-%m-%dT%H:%M:%S") | mktime')
           CUSTOM_LATEST=$(curl -s -X 'GET'   'https://hub.docker.com/v2/namespaces/${{ env.DOCKER_NS }}/repositories/swagger-oss-services-fe/tags'   -H 'accept: application/json' | jq '.results[] | select(.name=="latest") | .tag_last_pushed[0:19] | strptime("%Y-%m-%dT%H:%M:%S") | mktime')
-          if [[ ! -z "$UI_LATEST" && ! -z "$CUSTOM_LATEST" && $UI_LATEST -lt $CUSTOM_LATEST ]]; 
+          if [[ ! -z "$UI_LATEST" && ! -z "$CUSTOM_LATEST" && $UI_LATEST -gt $CUSTOM_LATEST ]]; 
           then
             echo "new Swagger UI image found"
             UI_NEW=1
