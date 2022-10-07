@@ -7,6 +7,9 @@ on:
       dockerNamespace:
         description: 'Docker Namespace'
         default: 'swaggerapi'
+  schedule:
+    - cron:  '*/5 * * * *'
+    - cron: '0 * * * *'
 jobs:
   docker:
     runs-on: ubuntu-latest
@@ -25,6 +28,11 @@ jobs:
       - name: check for new Swagger UI image
         run: |
           export DOCKER_NS=${{ github.event.inputs.dockerNamespace }}
+          if [[ -z "$DOCKER_NS" ]];
+          then
+            export DOCKER_NS="swaggerapi"
+          fi
+          echo "DOCKER_NS=$DOCKER_NS" >> $GITHUB_ENV
           UI_NEW=0
           UI_LATEST=$(curl -s -X 'GET'   'https://hub.docker.com/v2/namespaces/swaggerapi/repositories/swagger-ui/tags'   -H 'accept: application/json' | jq '.results[] | select(.name=="latest") | .tag_last_pushed[0:19] | strptime("%Y-%m-%dT%H:%M:%S") | mktime')
           CUSTOM_LATEST=$(curl -s -X 'GET'   'https://hub.docker.com/v2/namespaces/${{ env.DOCKER_NS }}/repositories/swagger-oss-services-fe/tags'   -H 'accept: application/json' | jq '.results[] | select(.name=="latest") | .tag_last_pushed[0:19] | strptime("%Y-%m-%dT%H:%M:%S") | mktime')
