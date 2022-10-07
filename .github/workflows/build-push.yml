@@ -8,7 +8,6 @@ on:
         description: 'Docker Namespace'
         default: 'swaggerapi'
   schedule:
-    - cron:  '*/5 * * * *'
     - cron: '0 * * * *'
 jobs:
   docker:
@@ -27,15 +26,29 @@ jobs:
           password: ${{ secrets.DOCKERHUB_SB_PASSWORD }}
       - name: check for new Swagger UI image
         run: |
-          export DOCKER_NS=${{ github.event.inputs.dockerNamespace }}
+          echo "running"
+          echo "env.DOCKER_NS: ${{ env.DOCKER_NS }}"
+          DOCKER_NS=${{ env.DOCKER_NS }}
+          echo "DOCKER_NS: $DOCKER_NS"
           if [[ -z "$DOCKER_NS" ]];
           then
-            export DOCKER_NS="swaggerapi"
+            echo "missing DOCKER_NS: use default from secrets"
+            DOCKER_NS=${{ secrets.DOCKER_NS }}
+            if [[ -z "$DOCKER_NS" ]];
+            then
+              echo "still missing DOCKER_NS: use default"
+              DOCKER_NS="swaggerapi"
+            fi
+            echo "DOCKER_NS=$DOCKER_NS" >> $GITHUB_ENV
           fi
-          echo "DOCKER_NS=$DOCKER_NS" >> $GITHUB_ENV
+          echo "effective DOCKER_NS: $DOCKER_NS"
+          echo "effective env.DOCKER_NS: ${{ env.DOCKER_NS }}"
           UI_NEW=0
+          echo "getting UI"
           UI_LATEST=$(curl -s -X 'GET'   'https://hub.docker.com/v2/namespaces/swaggerapi/repositories/swagger-ui/tags'   -H 'accept: application/json' | jq '.results[] | select(.name=="latest") | .tag_last_pushed[0:19] | strptime("%Y-%m-%dT%H:%M:%S") | mktime')
-          CUSTOM_LATEST=$(curl -s -X 'GET'   'https://hub.docker.com/v2/namespaces/${{ env.DOCKER_NS }}/repositories/swagger-oss-services-fe/tags'   -H 'accept: application/json' | jq '.results[] | select(.name=="latest") | .tag_last_pushed[0:19] | strptime("%Y-%m-%dT%H:%M:%S") | mktime')
+          CUSTOM_LATEST_URL=https://hub.docker.com/v2/namespaces/$DOCKER_NS/repositories/swagger-oss-services-fe/tags
+          echo "getting Custom $CUSTOM_LATEST_URL"
+          CUSTOM_LATEST=$(curl -s -X 'GET'   $CUSTOM_LATEST_URL -H 'accept: application/json' | jq '.results[] | select(.name=="latest") | .tag_last_pushed[0:19] | strptime("%Y-%m-%dT%H:%M:%S") | mktime')
           if [[ ! -z "$UI_LATEST" && ! -z "$CUSTOM_LATEST" && $UI_LATEST -gt $CUSTOM_LATEST ]]; 
           then
             echo "new Swagger UI image found"
@@ -45,7 +58,6 @@ jobs:
           fi
           echo "UI_NEW from script: $UI_NEW"
           echo "UI_NEW=$UI_NEW" >> $GITHUB_ENV
-          echo "env.DOCKER_NS: ${{ env.DOCKER_NS }}"
       - name: Build and push
         if: env.UI_NEW == 1
         uses: docker/build-push-action@v3
