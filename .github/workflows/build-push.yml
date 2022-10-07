@@ -21,7 +21,7 @@ jobs:
         uses: docker/login-action@v2
         with:
           username: ${{ secrets.DOCKERHUB_SB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
+          password: ${{ secrets.DOCKERHUB_SB_PASSWORD }}
       - name: check for new Swagger UI image
         run: |
           export DOCKER_NS=${{ github.event.inputs.dockerNamespace }}
